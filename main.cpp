@@ -23,8 +23,8 @@ public:
 
         server serv(logm.createInstance("serverthread"));
         serv.start(ClientsHandler);
+        
         //httplib::Server serv;
-
         //erv.set_mount_point("/", "./www");
 
         log /= "End of Program";

@@ -1,11 +1,13 @@
 #pragma once
 #include <iostream>
+#include <thread>
 #include <mutex>
 #include <vector>
 #include <string_view>
 #include <string>
 #include <sstream>
 #include <memory>
+#include "termcolor.hpp"
 /**
  * @brief 
  * передав его в stringbuildr ты можешь перевести его в строку, то есть
@@ -181,20 +183,50 @@ public:
 
 class LoggerInstance;
 class DomainLogger {
-    std::mutex mtx;
 public:
+    std::mutex mtx;
     unsigned long int LoggerNidCounter = 1000;
-    static constexpr std::string_view TypeNames[] = { "\033[94m[INFO]\0", "\033[33m[WARNING]\0", "\033[31m[ERROR]\0", "\033[32m[SUCCESS]\0" };
+
+    DomainLogger() {
+        log(0, eLogType::Warning, "DomainLoggerConstuctor", "created logm");
+    }
+    //static constexpr std::string_view TypeNames[] = { "\033[94m[INFO]\0", "\033[33m[WARNING]\0", "\033[31m[ERROR]\0", "\033[32m[SUCCESS]\0" };
+    static constexpr std::string_view TypeNames[] = { "[INFO]\0", "[WARNING]\0", "[ERROR]\0", "[SUCCESS]\0" };
     std::vector<std::unique_ptr<LoggerInstance>> instances;
-    #define LogWithLoggerNidd
+    //#define LogWithLoggerNidd
     #ifndef LogWithLoggerNidd
     void log(int LoggerNidCounter, eLogType e, const std::string Name, std::string Message) {
-        //std::unique_lock<std::mutex>(mtx);
-        printf("%.*s %s: %s \033[0m\n", static_cast<int>(TypeNames[e].length()), TypeNames[e].data(), Name.c_str(), Message.c_str());
+        std::unique_lock<std::mutex> lock(mtx);
+        switch (e) {
+        case eLogType::Error:
+            std::cout << termcolor::red
+                 << std::string{TypeNames[e]} << " " << Name << ": "
+                 << Message << termcolor::reset <<"\n";
+            break;
+        case eLogType::Info:
+            std::cout << termcolor::bright_blue
+                 << std::string{TypeNames[e]} << " " << Name << ": "
+                 << Message << termcolor::reset << "\n";
+            break;
+        case eLogType::Success:
+            std::cout << termcolor::green
+                 << std::string{TypeNames[e]} << " " << Name << ": "
+                 << Message << termcolor::reset << "\n";
+            break;
+        case eLogType::Warning:
+            std::cout << termcolor::yellow
+                 << std::string{TypeNames[e]} << " " << Name << ": "
+                 << Message << termcolor::reset << "\n";
+            break;
+        default:
+            break;
+        }
+        //mtx.unlock();
+        //printf("%.*s %s: %s \033[0m\n", static_cast<int>(TypeNames[e].length()), TypeNames[e].data(), Name.c_str(), Message.c_str());
     }
     #else
     void log(int LoggerNidCounter, eLogType e, const std::string Name, std::string Message) {
-        //std::unique_lock<std::mutex>(mtx);
+        std::unique_lock<std::mutex>(mtx);
         printf("%d %.*s %s: %s \033[0m\n", LoggerNidCounter, static_cast<int>(TypeNames[e].length()), TypeNames[e].data(), Name.c_str(), Message.c_str());
     }
     #endif
@@ -203,11 +235,11 @@ public:
 class LoggerInstance : public ILogger {
 public:
     int LoggerNid = -1;
-    DomainLogger* main;
+    DomainLogger& main;
     const std::string name;
 
-    LoggerInstance(int LoggerNid, std::string name) : LoggerNid(LoggerNid), name(name) {}
+    LoggerInstance(DomainLogger& logm, int LoggerNid, std::string name) : main(logm), LoggerNid(LoggerNid), name(name) {}
     virtual void log(eLogType e, std::string Message) {
-        main->log(LoggerNid, e, name, Message);
+        main.log(LoggerNid, e, name, Message);
     }
 };

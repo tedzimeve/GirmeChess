@@ -7,8 +7,6 @@
             try {
                 log(eLogType::Success, "worker started success");
                 log * 't' % 'e' % 's' % 't';
-                while(true)
-                    log += "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
                 while(true) {
                     auto task = _tpool->getTask();
                     log += "returned task\n";

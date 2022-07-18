@@ -1,7 +1,7 @@
 #include "LoggerM.h"
 
 ILogger& DomainLogger::createInstance(std::string name) {
-    LoggerInstance* logger = new LoggerInstance(LoggerNidCounter++, name);
+    LoggerInstance* logger = new LoggerInstance(*this, LoggerNidCounter++, name);
     instances.emplace_back(logger);
     return *static_cast<ILogger*>(logger);
 };

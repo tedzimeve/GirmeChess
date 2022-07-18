@@ -9,10 +9,10 @@
 				"-fdiagnostics-color=always",
 				"-g",
 				"${workspaceFolder}\\*.cpp",
-				"-std=c++17",
 				"-o",
 				"${workspaceFolder}\\.build\\main.exe",
-				"-lwsock32"
+				"-lwsock32", 
+				"-std=c++17"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

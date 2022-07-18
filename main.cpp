@@ -12,7 +12,7 @@ public:
 
     Program() : pool(logm,logm.createInstance("ThreadPool")), log(logm.createInstance("Program")) {
         log *= "initialized";
-        pool.start(10);
+        pool.start(2);
     }
 
     static void ClientsHandler(SOCKET) {

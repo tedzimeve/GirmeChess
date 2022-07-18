@@ -11,7 +11,8 @@
 				"${workspaceFolder}\\*.cpp",
 				"-std=c++17",
 				"-o",
-				"${workspaceFolder}\\.build\\main.exe"
+				"${workspaceFolder}\\.build\\main.exe",
+				"-lwsock32"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

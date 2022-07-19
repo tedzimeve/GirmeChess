@@ -186,13 +186,13 @@ class DomainLogger {
 public:
     std::mutex mtx;
     unsigned long int LoggerNidCounter = 1000;
+    std::vector<std::unique_ptr<LoggerInstance>> instances;
+    //static constexpr std::string_view TypeNames[] = { "\033[94m[INFO]\0", "\033[33m[WARNING]\0", "\033[31m[ERROR]\0", "\033[32m[SUCCESS]\0" };
+    static constexpr std::string_view TypeNames[] = { "[INFO]\0", "[WARNING]\0", "[ERROR]\0", "[SUCCESS]\0" };
 
     DomainLogger() {
         log(0, eLogType::Warning, "DomainLoggerConstuctor", "created logm");
     }
-    //static constexpr std::string_view TypeNames[] = { "\033[94m[INFO]\0", "\033[33m[WARNING]\0", "\033[31m[ERROR]\0", "\033[32m[SUCCESS]\0" };
-    static constexpr std::string_view TypeNames[] = { "[INFO]\0", "[WARNING]\0", "[ERROR]\0", "[SUCCESS]\0" };
-    std::vector<std::unique_ptr<LoggerInstance>> instances;
     //#define LogWithLoggerNidd
     #ifndef LogWithLoggerNidd
     void log(int LoggerNidCounter, eLogType e, const std::string Name, std::string Message) {

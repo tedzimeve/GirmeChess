@@ -7,13 +7,14 @@
             try {
                 Success(log) << "worker started success";
                 //log * 't' % 'e' % 's' % 't';
-                while(true) {
+                while(_tpool->iswork) {
                     auto task = _tpool->getTask();
                     Info(log) << "returned task\n";
                     task->link(_tpool, &log);
                     task->func(task);
                 }
-                std::cout << "---endthread--- " << std::endl;
+                Info(log) << "--endthread--";
+                data->isActive->isActive = false;
             } catch (std::bad_function_call) {
                 Error(log) << " WorkerThread crashed by bad_function_call";
             } catch (std::bad_alloc& e) {

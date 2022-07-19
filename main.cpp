@@ -27,7 +27,13 @@ public:
         //httplib::Server serv;
         //erv.set_mount_point("/", "./www");
 
-        Error(log) << "End of Program";
+        Important(log) << "MainThread goto line of end of Programm";
+        Important(log) << "MainThread goto line of end of Programm";
+        Note(log) << "we executed pool.join()";
+        pool.join();
+        Important(log) << "MainThread goto line of end of Programm";
+        Important(log) << "MainThread goto line of end of Programm";
+        Note(log) << "we executed while(true)";
         return 0;
     }
 };
@@ -35,5 +41,6 @@ public:
 int main() {
     Program prgr;
     prgr.start();
+    while(true);
     return 0;
 }

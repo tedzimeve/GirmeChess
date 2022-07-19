@@ -28,6 +28,7 @@ struct Task {
 
     template<typename T>
     Task(task_ft f, T* _obj) : obj(static_cast<void*>(_obj)), func(f) {}
+    Task(task_ft f, void* _obj, ILogger* log) : obj(_obj), func(f), logger(log) {}
 
     /// привязать пул потоков
     void link(ThreadPool* _pool, ILogger* _logger) {
@@ -57,15 +58,30 @@ struct Task {
         return test;
     }
 };
+struct isActive {
+    bool isActive = true;
+};
 class ThreadPool {
     std::vector<std::thread> threads;
+    std::vector<std::shared_ptr<isActive>> opened;
     size_t count_of_threads = 0;
     std::mutex mtx;
     std::condition_variable cond;
     DomainLogger& logm;
     ILogger& log;
+    bool iswork = true;
+    task_t defaultTask;
+    struct testtttt { int counter; testtttt(int c) : counter(c) {} };
+    static void TaskTest(task_t t) {
+        Warning(t->logger) << "Hello from TaskTest " << t->get<testtttt>()->counter;
+        delete t->get<testtttt>();
+    }
+    static void DefaultTask(task_t t) {
+        Warning(t->logger) << "Executed Default Task";
+    }
 public:
-    ThreadPool(DomainLogger& dlogger, ILogger& logger) : logm(dlogger), log(logger) {
+    ThreadPool(DomainLogger& dlogger, ILogger& logger) : logm(dlogger), log(logger),
+        defaultTask(new Task(DefaultTask, nullptr, &log)) {
         Success(logger) << "initialized";
     }
 private:
@@ -73,6 +89,7 @@ private:
     struct ThreadWorkerData {
         ThreadPool* pool;
         ILogger& log;
+        std::shared_ptr<isActive> isActive;
     };
     static void* ThreadPoolWorker(ThreadWorkerData* data);
 public:
@@ -83,8 +100,16 @@ public:
         try{
             //далее ожидаем пока не появится какая-либо задача
             try {
+                if(!iswork) {
+                    Note(log) << "thread handled that threads will closed";
+                    return defaultTask;
+                }
                 while(_tasks.empty()) {
                     cond.wait(lck);
+                    if(!iswork) {
+                        Note(log) << "thread handled that threads will closed";
+                        return defaultTask;
+                    }
                 }
             } catch (...) {
                 Error(log) << "error incident in getTask while waiting to Task at " << __LINE__ << "in" << __FILE__;
@@ -131,20 +156,39 @@ public:
         cond.notify_one();
         return 0;
     }
-    struct testtttt {
-        int counter;
-        testtttt(int c) : counter(c) {}
-    };
-    static void TaskTest(task_t t) {
-        auto v = t->get<testtttt>();
-        Warning(t->logger) << "Hello from TaskTest " << v->counter;
-    }
     void start(const size_t n) {
         for(int i = 0; i < n; ++i) {
-            threads.emplace_back(ThreadPoolWorker, new ThreadWorkerData{ this, logm.createInstance("threadworker"+std::to_string(++count_of_threads))}).detach();
+            std::shared_ptr<isActive> a = opened.emplace_back(new isActive());
+            threads.emplace_back(ThreadPoolWorker, 
+                new ThreadWorkerData{ 
+                    this, 
+                    logm.createInstance("threadworker"+std::to_string(++count_of_threads)),
+                    a
+                }).detach();
         }
         for(int i = 0; i < n; ++i) {
             addTask(TaskTest, new testtttt(i));
         }
+    }
+    void join() {
+        iswork = false;
+        cond.notify_all();
+        Warning(this->log) << threads.size() << " threads will canceled";
+        for(auto& thr : threads) {
+            try{
+                thr.join();
+            } catch (...) {
+                Error(this->log) << "throwed exception on thr.join() at the " << __FILE__ << ':' << __LINE__-2;
+            }
+            cond.notify_all();
+        }
+        cond.notify_all();
+        for(std::shared_ptr<isActive> isActive : opened) {
+            cond.notify_all();
+            Note(this->log) << "Waits for end of thread started";
+            while(isActive->isActive);
+            cond.notify_all();
+        }
+        Important(this->log) << "Closed all threads";
     }
 };

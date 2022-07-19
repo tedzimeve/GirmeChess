@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include "Teams.h"
+#include <vector>
 
 namespace GrimeObjects{
     // Структура, обозначающая точку нахождения объекта в пространстве
@@ -74,6 +76,21 @@ namespace GrimeObjects{
         private:
     };
 
+    // Общий примитивный класс карты. Может и (скорее всего) должен наследоваться более усложнёнными вариантами. 
+    class PointMap{
+        public:
+            std::vector<Point>* getMapPoints(){return &m_allCellsPositions;}
+            void generateMap(int xLength, int yLength){
+                for(int x = 0; x < xLength; x++){
+                    for(int y = 0; y < yLength; y++){
+                        m_allCellsPositions.push_back(Point(x, y));
+                    }
+                }
+            }
+        private:
+            std::vector<Point> m_allCellsPositions;
+    };
+
     Point operator + (Point point1, Point point2){
         return Point(point1.x + point2.x, point1.y + point2.y);
     }
@@ -135,10 +152,16 @@ namespace GrimeObjects{
     class Chessman: public GrimeObject{
         public:
             ChessmanType chessmanType;
-            virtual void move(Event event){}
-            virtual void attack(Event event){} //атака нужна, когда, например, пешка ходит вперёд, но атакует по диагонали 
-            virtual void die(Event event){}
+            bool isCanSwim;
+            bool isCanFly;
+            Team team;
+            virtual std::vector<Point> doOnSelect(PointMap* map){}; //здесь будем выводить доступные для ходьбы клетки
+            virtual void move(Point moveTo, Event* event){setPosition(moveTo);}
+            virtual void attack(Point moveTo, Event* event){setPosition(moveTo); /*TODO:функция убийства*/} //атака нужна, когда, например, пешка ходит вперёд, но атакует по диагонали 
+            virtual void die(Event* event){}
             Chessman(Point position, ChessmanType chessmanType): GrimeObject(position, chessman), chessmanType(chessmanType)
+            {isCanFly = false; isCanSwim = false;}
+            Chessman(Point position, ChessmanType chessmanType, bool isCanSwim, bool isCanFly): GrimeObject(position, chessman), chessmanType(chessmanType), isCanSwim(isCanSwim), isCanFly(isCanFly)
             {}
         private:
     };
@@ -148,8 +171,9 @@ namespace GrimeObjects{
         public:
             // TODO: спрайт тут должен быть или чёто такое хз
             CellType cellType;
-            virtual void onEnter(Chessman* chessman, Event event){}
-            Cell(Point position, CellType cellType): GrimeObject(position, cell), cellType(cellType)
+            bool isPassable;
+            virtual void doOnEnter(Chessman* chessman, Event* event){}
+            Cell(Point position, CellType cellType, bool isPassable): GrimeObject(position, cell), cellType(cellType), isPassable(isPassable)
             {}
         private:
     };

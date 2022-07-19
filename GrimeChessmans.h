@@ -6,11 +6,8 @@ namespace GrimeObjects{
         public:
             Pawn(Point position): Chessman(position, pawn)
             {}
-            void move(Event event) override{
-                setPosition(getPosition() += Point(0, 1));
-            }
-            void attack(Event event) override{
-                
+            std::vector<Point> doOnSelect(PointMap* map) override{
+
             }
         private:
     };

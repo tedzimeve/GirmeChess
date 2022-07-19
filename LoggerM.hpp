@@ -12,7 +12,7 @@
 #include "termcolor.hpp"
 
 /// типы вывода в лог
-enum eLogType { lInfo=0, lWarning=1, lError=2, lSuccess=3 };
+enum eLogType { lInfo=0, lWarning=1, lError=2, lSuccess=3, lImportant=5, lNote=6,  };
 /// интерфейс логгера на случай если будет больше видов логгера (например в отдельный файл) (небудет)
 class ILogger {
 public:
@@ -67,6 +67,16 @@ public:
     Warning(ILogger& l_) : StatedLog(l_,eLogType::lWarning) {}
     Warning(ILogger* l_) : StatedLog(l_,eLogType::lWarning) {}
 };
+class Important : public StatedLog {
+public:
+    Important(ILogger& l_) : StatedLog(l_,eLogType::lImportant) {}
+    Important(ILogger* l_) : StatedLog(l_,eLogType::lImportant) {}
+};
+class Note : public StatedLog {
+public:
+    Note(ILogger& l_) : StatedLog(l_,eLogType::lNote) {}
+    Note(ILogger* l_) : StatedLog(l_,eLogType::lNote) {}
+};
 
 
 class LoggerInstance;
@@ -76,7 +86,8 @@ public:
     unsigned long int LoggerNidCounter = 1000;
     std::vector<std::unique_ptr<LoggerInstance>> instances;
     //static constexpr std::string_view TypeNames[] = { "\033[94m[INFO]\0", "\033[33m[WARNING]\0", "\033[31m[ERROR]\0", "\033[32m[SUCCESS]\0" };
-    static constexpr std::string_view TypeNames[] = { "[INFO]\0", "[WARNING]\0", "[ERROR]\0", "[SUCCESS]\0" };
+    static constexpr std::string_view TypeNames[] = { 
+        "[INFO]\0", "[WARNING]\0", "[ERROR]\0", "[SUCCESS]\0", "??????\0", "[IPORTANT]\0", "[NOTE]\0" };
 
     DomainLogger() {
         log(0, eLogType::lWarning, "DomainLoggerConstuctor", "created logm");
@@ -86,6 +97,7 @@ public:
     void log(int LoggerNidCounter, eLogType e, const std::string Name, std::string Message) {
         std::unique_lock<std::mutex> lock(mtx);
         switch (e) {
+        case eLogType::lImportant:
         case eLogType::lError:
             std::cout << termcolor::red
                  << std::string{TypeNames[e]} << " " << Name << ": "
@@ -101,6 +113,7 @@ public:
                  << std::string{TypeNames[e]} << " " << Name << ": "
                  << Message << termcolor::reset << "\n";
             break;
+        case eLogType::lNote:
         case eLogType::lWarning:
             std::cout << termcolor::yellow
                  << std::string{TypeNames[e]} << " " << Name << ": "

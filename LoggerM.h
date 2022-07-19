@@ -7,6 +7,8 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#define TERMCOLOR_USE_ANSI_ESCAPE_SEQUENCES
+//#define TERMCOLOR_AUTODETECTED_IMPLEMENTATION
 #include "termcolor.hpp"
 /**
  * @brief 

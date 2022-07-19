@@ -11,7 +11,7 @@ class Program {
 public:
 
     Program() : pool(logm,logm.createInstance("ThreadPool")), log(logm.createInstance("Program")) {
-        log *= "initialized";
+        Success(log) << "initialized";
         pool.start(2);
     }
 
@@ -19,15 +19,15 @@ public:
 
     }
     int start() {
-        log *= "started";
+        Success(log) << "started";
 
-        server serv(logm.createInstance("serverthread"));
-        serv.start(ClientsHandler);
+        //server serv(logm.createInstance("serverthread"));
+        //serv.start(ClientsHandler);
         
         //httplib::Server serv;
         //erv.set_mount_point("/", "./www");
 
-        log /= "End of Program";
+        Error(log) << "End of Program";
         return 0;
     }
 };

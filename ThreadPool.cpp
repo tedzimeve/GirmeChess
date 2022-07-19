@@ -5,20 +5,20 @@
             ILogger& log = data->log;
             ThreadPool* _tpool = data->pool;
             try {
-                log(eLogType::Success, "worker started success");
-                log * 't' % 'e' % 's' % 't';
+                Success(log) << "worker started success";
+                //log * 't' % 'e' % 's' % 't';
                 while(true) {
                     auto task = _tpool->getTask();
-                    log += "returned task\n";
-                    task->link(_tpool);
-                    //task->func(task);
+                    Info(log) << "returned task\n";
+                    task->link(_tpool, &log);
+                    task->func(task);
                 }
                 std::cout << "---endthread--- " << std::endl;
             } catch (std::bad_function_call) {
-                log /= " WorkerThread crashed by bad_function_call";
+                Error(log) << " WorkerThread crashed by bad_function_call";
             } catch (std::bad_alloc& e) {
-                log /= " WorkerThread crashed std::bad_alloc";
-                log /= stringbuilder() % e.what();
+                Error(log) << " WorkerThread crashed std::bad_alloc\n"
+                    << "\te.what() \t" << e.what();
             } catch (std::bad_exception& e) {
                 std::cout << "[ERROR] WorkerThread crashed std::bad_exception" << std::endl;
                 std::cout << e.what();

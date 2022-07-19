@@ -7,7 +7,7 @@ namespace Girme {
         WSAData wsaData;
         WORD DLLVersion = MAKEWORD(2, 1);
         if(WSAStartup(DLLVersion, &wsaData) != 0) {
-            log /= "Error in WSAStartup";
+            Error(log) << "Error in WSAStartup";
             exit(1);
         }
         // инициализация прослущивающего сокета
@@ -19,9 +19,9 @@ namespace Girme {
         sListen = socket(AF_INET, SOCK_STREAM, 0);
         bind(sListen, (SOCKADDR*)&addr, sizeof(addr));
         if(sListen == 0) {
-            log /= "Error in create socket";
+            Error(log) << "Error in create socket";
         }
-        log += "initialized";
+        Error(log) << "initialized";
     }
 
     int server::start(server::ClientConnectionHandler clienthandler) {
@@ -35,13 +35,13 @@ namespace Girme {
             //send(newConnection, msg, sizeof(msg), NULL);
         }*/
         listen(sListen, SOMAXCONN);
-        log *= "clients acceptor started";
+        Success(log) << "clients acceptor started";
         while(true) {
             newConnection = accept(sListen, (SOCKADDR*)&addr, &sizeofaddr);
             if(newConnection == 0)
                 clienthandler(newConnection);
             else
-                log /= "Error in ";
+                Success(log) << "Error in ";
         }
     }
 } // namespace Girme

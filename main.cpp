@@ -1,7 +1,6 @@
 #include <iostream>
-#include "GirmeServer.hpp"
-#include "GetterSetter.h"
-#include "ThreadPool.hpp"
+#include "service\GirmeServer.hpp"
+#include "service\ThreadPool.hpp"
 
 using namespace Girme;
 class Program {

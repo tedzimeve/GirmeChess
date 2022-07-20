@@ -5,7 +5,7 @@
 #include <winsock2.h>
 #include <iostream>
 #include <string>
-#include "LoggerM.hpp"
+#include "..\helpers\LoggerM.hpp"
 //странно, но в VSCode любой блок через #ifdef выделяется нерабочим
 
 namespace Girme {

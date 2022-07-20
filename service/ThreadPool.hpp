@@ -6,7 +6,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
-#include "LoggerM.hpp"
+#include "..\helpers\LoggerM.hpp"
 
 struct Task;
 typedef std::shared_ptr<Task> task_t;

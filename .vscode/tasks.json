@@ -7,8 +7,11 @@
 			"command": "g++",
 			"args": [
 				"-fdiagnostics-color=always",
+				"-IC",
 				"-g",
 				"${workspaceFolder}\\*.cpp",
+				"${workspaceFolder}\\helpers\\*.cpp",
+				"${workspaceFolder}\\service\\*.cpp",
 				"-o",
 				"${workspaceFolder}\\.build\\main.exe",
 				"-lwsock32", 

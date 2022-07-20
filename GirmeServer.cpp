@@ -1,4 +1,4 @@
-#include "GirmeServer.h"
+#include "GirmeServer.hpp"
 
 namespace Girme {
     

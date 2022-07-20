@@ -5,7 +5,7 @@
 #include <winsock2.h>
 #include <string>
 #include <map>
-#include "ParserBaseFunctions.h"
+#include "ParserBaseFunctions.hpp"
 
 using namespace ParserBaseFunctions;
 #define STANDART_HTTPPATH_LEN 20
@@ -68,6 +68,14 @@ namespace GirmeServer {
             false, false, false, 
             true, true, true
         };
+        /**
+         * @brief 
+         * нужен лин чтобы определить, что текущее состояние при целой строке или частичной
+         */
+        static constexpr bool isBodyParseStated[] {
+            false, false, true, 
+            false, false, true
+        };
 
 
         void addHeaderLine(const std::string HeaderName, const std::string HeaderValue) {
@@ -105,12 +113,10 @@ namespace GirmeServer {
          * @param input полностью HTTP formatted документ или его доля
          */
         static __RequestParseStated::eRequestParseState parse(__RequestParseStated& req, std::string input) {
-            using eParseState = __RequestParseStated::eRequestParseState;
             ///< Dropper of lines by line from the HTTP Doc or its part
             HTTPDocStrDropper sdr(input);
             while (true) {
-                if(req.state == __RequestParseStated::MaybeBodyState ||
-                        req.state == __RequestParseStated::BodyParted) {
+                if(__RequestParseStated::isBodyParseStated[req.state]) {
                     
                 }
                 ///< one line from the HTTP Doc
@@ -129,29 +135,6 @@ namespace GirmeServer {
                         strline = req.popPartedLine() + line.second;
                         req.state = __RequestParseStated::FullStatedAllias[req.state];
                     }
-                    switch (req.state) {
-                        case eParseState::TitleParse:
-                            doTitleParse(req, line.second);
-                            req.state = eParseState::HeadersParse;
-                            break;
-                        case eParseState::HeadersParse:
-                            if(line.second == "") { // detected twice line break 
-                                // this is lucky situaton of detecte twice break
-                                // but by my analyze in my mind at this moment i hasn't found
-                                //       an other situation where we can find thre twice line breaks..
-                                //       maybe because we don't analyze headers in other places
-                                //       only parses line if they if full
-                                if(req.isContainsBody())
-                                    req.state = eParseState::MaybeBodyState;
-                            }
-                            doHeaderStringParse(req, line.second);
-                            break;
-                        case eParseState::MaybeBodyState:
-                            const size_t ContentLen = req.getContentLength();
-                            int parsedlen = 0;
-
-                            break;
-                    }
                 }
             }
             return req.state;
@@ -164,56 +147,35 @@ namespace GirmeServer {
          * @param req 
          * @param req 
          */
-        static void __parse_interv(__RequestParseStated& req, const std::string input) {
+        static void __parse_interv__Line_or_Body(__RequestParseStated& req, const std::string input) {
+            using eParseState = __RequestParseStated::eRequestParseState;
 
-        }
-        /**
-         * @brief 
-         * У этого метода очень простое бремя, ему всего лишь надо посчитать
-         * @param req Собираемый пакет запроса со стейт машинной процесса анализа
-         * @param headerFormattedString строка в формате <code>$HeaderName: $Value</code>
-         */
-        static void doBodyParse(__RequestParseStated& req, const std::string& headerFormattedString) {
-            typedef enum eHeaderParseState { nHeaderName, nSpace, nValue };
-            static const unsigned int STANDART_HEADERNAME_LEN = 20;
-            static const unsigned int STANDART_HEADERVALUE_LEN = 20;
-            const size_t len = headerFormattedString.length();
-            std::string HeaderName = ""; HeaderName.reserve(STANDART_HEADERNAME_LEN);
-            std::string HeaderValue = ""; HeaderValue.reserve(STANDART_HEADERVALUE_LEN);
-            eHeaderParseState state = nHeaderName;
-/*
-            for(int cursor = 0; cursor < len; ++cursor) {
-                const char ch = headerFormattedString[cursor];
-                switch (state) {
-                case nHeaderName:
-                    switch (ch) {
-                        case ':': // if found ":" it's a sign of end of HeaderName
-                            ret = ""; ret.reserve(STANDART_HTTPVERSION_LEN);
-                            state = nSpace;
-                            break;
-                        case ' ': //ignores spaces
-                            break;
-                        default: //else appends HeaderName
-                            HeaderName += ch;
-                            break;
+
+            switch (req.state) {
+                case eParseState::TitleParse:
+                    doTitleParse(req, input);
+                    req.state = eParseState::HeadersParse;
+                    break;
+                case eParseState::HeadersParse:
+                    if(input == "") { // detected twice line break 
+                        // this is lucky situaton of detecte twice break
+                        // but by my analyze in my mind at this moment i hasn't found
+                        //       an other situation where we can find thre twice line breaks..
+                        //       maybe because we don't analyze headers in other places
+                        //       only parses line if they if full
+                        req.state = eParseState::Complete;
+                        if(req.isContainsBody()) {
+                            req.state = eParseState::MaybeBodyState;
+                        }
                     }
+                    doHeaderStringParse(req, input);
                     break;
-                case nSpace:
-                    switch (ch) {
-                        case ' ': //ignores spaces until we handle other char
-                            break;
-                        default: //we handle
-                            HeaderValue += ch;
-                            state = nValue;
-                            break;
-                    }
+                case eParseState::MaybeBodyState:
+                    const size_t ContentLen = req.getContentLength();
+                    int parsedlen = 0;
+
                     break;
-                case nValue:
-                    HeaderValue += ch;
-                    break;
-                }
             }
-            req.addHeaderLine(HeaderName, HeaderValue);*/
         }
         /**
          * @brief 

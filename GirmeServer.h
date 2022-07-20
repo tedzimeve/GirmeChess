@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <SDKDDKVer.h>
-//#pragma comment(lib, "ws2_32.lib")-L"ws2_32"
-//#pragma comment(lib, -L"ws2_32")
 #include <winsock2.h>
 #include <iostream>
 #include <string>

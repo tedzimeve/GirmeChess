@@ -15,8 +15,11 @@ public:
         pool.start(2);
     }
 
-    static void ClientsHandler(SOCKET) {
-
+    static void ClientsHandler(SOCKET sock) {
+        /*
+         * create task to recieve contents from sock
+         *
+         */
     }
     int start() {
         Success(log) << "started";

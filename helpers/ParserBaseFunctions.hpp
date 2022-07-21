@@ -31,7 +31,7 @@ namespace ParserBaseFunctions {
         HTTPDocStrDropper::getLineReturn getLine() {
             const size_t len = strref.length();
             std::string ret = "";
-            ret.reserve(20);
+            ret.reserve(30);
             for(cursor = 0; cursor < len; ++cursor) {
                 // new line is "/r/n"
                 switch (strref[cursor]) {
@@ -46,6 +46,16 @@ namespace ParserBaseFunctions {
                 }
             }
             return std::make_pair(EndOfStr, std::move(ret));
+        }
+
+        std::string drop() {
+            const size_t len = strref.length();
+            std::string ret = "";
+            ret.reserve(50);
+            for(cursor = 0; cursor < len; ++cursor) {
+                ret += strref[cursor];
+            }
+            return ret;
         }
     };
     class StrCopyDrpper {};

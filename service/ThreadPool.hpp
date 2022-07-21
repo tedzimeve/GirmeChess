@@ -112,7 +112,7 @@ public:
                     }
                 }
             } catch (...) {
-                Error(log) << "error incident in getTask while waiting to Task at " << __LINE__ << "in" << __FILE__;
+                Error(log) << "error incident in getTask while waiting to Task at " << __LINE__ << " in " << __FILE__;
             }
             
             //как узнаем что в очереди есть невыполненные задачи - выполнить следующее:
@@ -120,19 +120,19 @@ public:
                 ret = _tasks.front(); //получить первый элемент
                 _tasks.pop(); //удалить первый элемент
             } catch (...) {
-                Error(log) << "error incident in getTask when dropped the task from Tasks queue" << __LINE__ << "in" << __FILE__ 
+                Error(log) << "error incident in getTask when dropped the task from Tasks queue " << __LINE__ << " in " << __FILE__ 
                     << "\n\t\t\t we will recursively request to getTask()";
                 ret = getTask();
             }
             try {
                 ret->ping();
             } catch (...) {
-                Error(log) << "error incident in getTask when we pinged a task. Maybe handled NULL task" << __LINE__ << "in" << __FILE__ 
+                Error(log) << "error incident in getTask when we pinged a task. Maybe handled NULL task " << __LINE__ << " in " << __FILE__ 
                     << "\n\t\t\t we will recursively request to getTask()";
                 ret = getTask();
             }
         } catch (...) {
-            Error(log) << "unknown error incident in getTask in the getting Task" << __LINE__ << "in" << __FILE__ 
+            Error(log) << "unknown error incident in getTask in the getting Task " << __LINE__ << " in " << __FILE__ 
                 << "\n\t\t\t we will recursively request to getTask()";
             ret = getTask();
         }
@@ -141,7 +141,7 @@ public:
     }
     template<typename T>
     int addTask(task_ft f, T* _obj) {
-        Info(log) << "adding a task " << __LINE__;
+        Info(log) << "adding a task :" << __LINE__;
         std::unique_lock lck(mtx);
         _tasks.emplace(
             task_t(new Task(f, _obj))
@@ -150,7 +150,7 @@ public:
         return 0;
     }
     int addTask(task_t task) {
-        Info(log) << "adding a task " << __LINE__;
+        Info(log) << "adding a task :" << __LINE__;
         std::unique_lock lck(mtx);
         _tasks.emplace(task);//добавить в конец
         cond.notify_one();

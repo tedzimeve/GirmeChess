@@ -41,6 +41,7 @@ namespace GirmeServer {
         enum eRequestParseState { TitleParse=0, HeadersParse=1, MaybeBodyState=2, 
                                 TitleParted=3, HeadersParted=4, BodyParted=5, Complete=200 };
         eRequestParseState state = TitleParse;
+
         /**
          * @brief 
          * проАлиасил состояния в частичные состояния - это надо, 
@@ -92,13 +93,20 @@ namespace GirmeServer {
                 return 0;
             }
         }
-        ///< частичная строка, 
+        ///< частичная строка
         std::string _partedline = "";
         void savePartedLine(const std::string partedline) {
             _partedline = partedline;
         }
         std::string popPartedLine() {
             return _partedline;
+        }
+        ///< тело запроса
+        std::string _body = "";
+        unsigned int contentlength = 0;
+        unsigned int appendBody(const std::string body) {
+            _body += body;
+            contentlength = body.size();
         }
     };
     using eHTTPMethod = Request::eHTTPMethod;
@@ -113,27 +121,72 @@ namespace GirmeServer {
          * @param input полностью HTTP formatted документ или его доля
          */
         static __RequestParseStated::eRequestParseState parse(__RequestParseStated& req, std::string input) {
+            using eParseState = __RequestParseStated::eRequestParseState;
+
+
             ///< Dropper of lines by line from the HTTP Doc or its part
             HTTPDocStrDropper sdr(input);
             while (true) {
                 if(__RequestParseStated::isBodyParseStated[req.state]) {
-                    
-                }
-                ///< one line from the HTTP Doc
-                const HTTPDocStrDropper::getLineReturn line = sdr.getLine();
-                // Is current line Parted or Full
-                if(line.first == HTTPDocStrDropper::eGetLineReturnType::EndOfStr) { // if parted
-                    req.savePartedLine(
-                        __RequestParseStated::isPStated[req.state] // если сейчас Parted состояние
-                        ? (req.popPartedLine() + line.second) // то расширяем уже сохраннённую строку
-                        : line.second // иначе просто сохраняем только текущую строку
-                    );
-                    req.state = __RequestParseStated::PStatedAllias[req.state];
-                } else { // if full
-                    std::string strline = line.second;
-                    if(__RequestParseStated::isPStated[req.state]) {
-                        strline = req.popPartedLine() + line.second;
-                        req.state = __RequestParseStated::FullStatedAllias[req.state];
+                    const size_t ContentLen = req.getContentLength();
+                    unsigned int parsedlen = req.contentlength;
+
+                    const std::string strl = sdr.drop();
+                    const size_t inputlen = strl.length();
+                    std::string parsed = "";//нужно переименовать в reader
+                    parsed.reserve(50);
+
+                    for(int i = 0; parsedlen < ContentLen && i < inputlen; ++parsedlen, ++i) {
+                        parsed += strl[i];
+                    }
+                    req.appendBody(parsed);
+                    if (req.contentlength >= ContentLen) {
+                        req.state = eParseState::Complete;
+                    }
+                    return req.state;
+                } else if(req.state == eParseState::Complete) {
+                    return req.state;
+                } else {
+                    ///< one line from the HTTP Doc
+                    const HTTPDocStrDropper::getLineReturn line = sdr.getLine();
+
+                    // Is current line Parted or Full
+                    if(line.first == HTTPDocStrDropper::eGetLineReturnType::EndOfStr) { // while parted
+                        req.savePartedLine(
+                            __RequestParseStated::isPStated[req.state] // если сейчас Parted состояние
+                            ? (req.popPartedLine() + line.second) // то расширяем уже сохраннённую строку
+                            : line.second // иначе просто сохраняем только текущую строку
+                        );
+                        req.state = __RequestParseStated::PStatedAllias[req.state];
+                        return req.state;
+                    } else { // if full
+                        std::string strline = line.second;
+                        if(__RequestParseStated::isPStated[req.state]) {
+                            strline = req.popPartedLine() + line.second;
+                            req.state = __RequestParseStated::FullStatedAllias[req.state];
+                        }
+                        switch (req.state) {
+                            case eParseState::TitleParse:
+                                doTitleParse(req, strline);
+                                req.state = eParseState::HeadersParse;
+                                break;
+                            case eParseState::HeadersParse:
+                                if(input == "") { // detected twice line break 
+                                    // this is lucky situaton of detecte twice break
+                                    // but by my analyze in my mind at this moment i hasn't found
+                                    //       an other situation where we can find thre twice line breaks..
+                                    //       maybe because we don't analyze headers in other places
+                                    //       only parses line if they if full
+                                    req.state = eParseState::Complete;
+                                    if(req.isContainsBody()) {
+                                        req.state = eParseState::MaybeBodyState;
+                                    }
+                                }
+                                doHeaderStringParse(req, strline);
+                                break;
+                            case eParseState::MaybeBodyState:
+                                break;
+                        }
                     }
                 }
             }
@@ -143,39 +196,11 @@ namespace GirmeServer {
     private:
         /**
          * @brief 
-         * часть функции parse(req, input) которая выполняет анализ
+         * часть функции parse(req, input) которая выполняет анализ отдельной строки или принимает тело документа
          * @param req 
          * @param req 
          */
         static void __parse_interv__Line_or_Body(__RequestParseStated& req, const std::string input) {
-            using eParseState = __RequestParseStated::eRequestParseState;
-
-
-            switch (req.state) {
-                case eParseState::TitleParse:
-                    doTitleParse(req, input);
-                    req.state = eParseState::HeadersParse;
-                    break;
-                case eParseState::HeadersParse:
-                    if(input == "") { // detected twice line break 
-                        // this is lucky situaton of detecte twice break
-                        // but by my analyze in my mind at this moment i hasn't found
-                        //       an other situation where we can find thre twice line breaks..
-                        //       maybe because we don't analyze headers in other places
-                        //       only parses line if they if full
-                        req.state = eParseState::Complete;
-                        if(req.isContainsBody()) {
-                            req.state = eParseState::MaybeBodyState;
-                        }
-                    }
-                    doHeaderStringParse(req, input);
-                    break;
-                case eParseState::MaybeBodyState:
-                    const size_t ContentLen = req.getContentLength();
-                    int parsedlen = 0;
-
-                    break;
-            }
         }
         /**
          * @brief 

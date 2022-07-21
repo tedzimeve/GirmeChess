@@ -24,7 +24,7 @@ namespace GirmeServer {
         const std::string path = "/";
         const std::string version = "";
 
-        const std::string body; 
+        const std::string body = ""; 
     };
     /**
      * @brief 
@@ -37,6 +37,7 @@ namespace GirmeServer {
         std::string path = "/";
         std::string version = "";
         std::map<const std::string, const std::string> headers;
+    #pragma region state-machine declarations
         /**
          * @brief 
          * состояния стейт-машины анализа пакета
@@ -94,7 +95,7 @@ namespace GirmeServer {
             false, false, true, 
             false, false, true
         };
-
+#pragma endregion state-machine declarations
 
         void addHeaderLine(const std::string HeaderName, const std::string HeaderValue) {
             headers.emplace(doLowerCase(HeaderName), HeaderValue);
@@ -107,6 +108,12 @@ namespace GirmeServer {
                 return 0;
             }
         }
+        /**
+         * @brief 
+         * Имеет ли документ тело
+         * @return true если имеет
+         * @return false если не имеет
+         */
         bool isContainsBody() {
             return getContentLength() != 0;
         }
@@ -123,7 +130,7 @@ namespace GirmeServer {
         unsigned int contentlength = 0;
         unsigned int appendBody(const std::string body) {
             _body += body;
-            contentlength = body.size();
+            contentlength = _body.size();
             return contentlength;
         }
     };
@@ -318,7 +325,7 @@ namespace GirmeServer {
      * Unstable ContentReciever
      * 
      */
-    class ContentReciever {
+    class ContentRecieverStated {
     public:
         std::string recieved_data;
         SOCKET sock;

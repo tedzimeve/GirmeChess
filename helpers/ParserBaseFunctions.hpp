@@ -13,6 +13,7 @@ namespace ParserBaseFunctions {
     static const std::string doLowerCase(const std::string& input) {
         std::string newString = "";
         const size_t len = input.length();
+        newString.reserve(len);
         for(int i = 0; i < len; ++i) {
             newString += std::tolower(input[i]);
         }
@@ -32,12 +33,13 @@ namespace ParserBaseFunctions {
             const size_t len = strref.length();
             std::string ret = "";
             ret.reserve(30);
-            for(cursor = 0; cursor < len; ++cursor) {
+            for(; cursor < len; ++cursor) {
                 // new line is "/r/n"
                 switch (strref[cursor]) {
                 case '\r'://skip
                     break;
                 case '\n':
+                    ++cursor;
                     return std::make_pair(FullLine, std::move(ret));
                     break;
                 default:
@@ -52,7 +54,7 @@ namespace ParserBaseFunctions {
             const size_t len = strref.length();
             std::string ret = "";
             ret.reserve(50);
-            for(cursor = 0; cursor < len; ++cursor) {
+            for(; cursor < len; ++cursor) {
                 ret += strref[cursor];
             }
             return ret;

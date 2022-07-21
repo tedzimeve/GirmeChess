@@ -1,6 +1,7 @@
 #include <iostream>
 #include "service\GirmeServer.hpp"
 #include "service\ThreadPool.hpp"
+#include "service\HTTPParseBase.hpp"
 
 using namespace Girme;
 class Program {
@@ -39,10 +40,22 @@ public:
         return 0;
     }
 };
-
+using namespace GirmeServer;
 int main() {
-    Program prgr;
+    /*Program prgr;
     prgr.start();
-    while(true);
+    while(true);*/
+    __RequestParseStated reqstated;
+    std::vector<std::string> partOfHttpDocument = {
+        "GET /index.html http/v1.1\r\n" 
+        "Host: localhost:8080\r\n"
+        "Content-Length: ","10\r\n"
+        "h4: v1\r\n\r","\n",
+        "1234567890"
+    };
+    for (auto send : partOfHttpDocument) {
+        Girme::GirmeServer::HTTPParser::parse(reqstated, send);
+    }
+    
     return 0;
 }

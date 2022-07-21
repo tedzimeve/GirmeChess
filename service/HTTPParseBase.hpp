@@ -5,7 +5,7 @@
 #include <winsock2.h>
 #include <string>
 #include <map>
-#include "ParserBaseFunctions.hpp"
+#include "../helpers/ParserBaseFunctions.hpp"
 
 using namespace ParserBaseFunctions;
 #define STANDART_HTTPPATH_LEN 20
@@ -37,9 +37,26 @@ namespace GirmeServer {
         std::string path = "/";
         std::string version = "";
         std::map<const std::string, const std::string> headers;
-
-        enum eRequestParseState { TitleParse=0, HeadersParse=1, MaybeBodyState=2, 
-                                TitleParted=3, HeadersParted=4, BodyParted=5, Complete=200 };
+        /**
+         * @brief 
+         * состояния стейт-машины анализа пакета
+         */
+        enum eRequestParseState { 
+            ///< чтение Заглавия
+            TitleParse=0, 
+            ///< чтение Заголовка
+            HeadersParse=1, 
+            ///< чтение тела документа
+            MaybeBodyState=2, 
+            ///< чтение Заглавия прекратилось на середине строки
+            TitleParted=3, 
+            ///< чтение Заголовка прекратилось на середине строки
+            HeadersParted=4, 
+            ///< ???
+            BodyParted=5, 
+            ///< чтение пакета завершено
+            Complete=200 };
+        ///< текущее состояние анализа пакета
         eRequestParseState state = TitleParse;
 
         /**
@@ -82,16 +99,16 @@ namespace GirmeServer {
         void addHeaderLine(const std::string HeaderName, const std::string HeaderValue) {
             headers.emplace(doLowerCase(HeaderName), HeaderValue);
         }
-        bool isContainsBody() {
-            return headers.find("content-length") != headers.end();
-        }
         const size_t getContentLength() {
             auto iter = headers.find("content-length");
             try{
-                return iter != headers.end() ? std::stoi((*iter).second) : 0;
+                return (iter != headers.end()) ? std::stoi((*iter).second) : 0;
             } catch (...) {
                 return 0;
             }
+        }
+        bool isContainsBody() {
+            return getContentLength() != 0;
         }
         ///< частичная строка
         std::string _partedline = "";
@@ -107,6 +124,7 @@ namespace GirmeServer {
         unsigned int appendBody(const std::string body) {
             _body += body;
             contentlength = body.size();
+            return contentlength;
         }
     };
     using eHTTPMethod = Request::eHTTPMethod;
@@ -119,6 +137,8 @@ namespace GirmeServer {
          * или частичного. 
          * @param req Собираемый пакет запроса со стейт машинной процесса анализа
          * @param input полностью HTTP formatted документ или его доля
+         * @return возвращает состояние анализа зхапроса
+         * @todo Refactor state-machine!!!
          */
         static __RequestParseStated::eRequestParseState parse(__RequestParseStated& req, std::string input) {
             using eParseState = __RequestParseStated::eRequestParseState;
@@ -171,7 +191,7 @@ namespace GirmeServer {
                                 req.state = eParseState::HeadersParse;
                                 break;
                             case eParseState::HeadersParse:
-                                if(input == "") { // detected twice line break 
+                                if(strline.length() == 0) { // detected twice line break 
                                     // this is lucky situaton of detecte twice break
                                     // but by my analyze in my mind at this moment i hasn't found
                                     //       an other situation where we can find thre twice line breaks..
@@ -181,8 +201,8 @@ namespace GirmeServer {
                                     if(req.isContainsBody()) {
                                         req.state = eParseState::MaybeBodyState;
                                     }
-                                }
-                                doHeaderStringParse(req, strline);
+                                } else 
+                                    doHeaderStringParse(req, strline);
                                 break;
                             case eParseState::MaybeBodyState:
                                 break;
@@ -200,8 +220,7 @@ namespace GirmeServer {
          * @param req 
          * @param req 
          */
-        static void __parse_interv__Line_or_Body(__RequestParseStated& req, const std::string input) {
-        }
+        static void __parse_interv__Line_or_Body(__RequestParseStated& req, const std::string input) { }
         /**
          * @brief 
          * Очень доверчивый метод, считает что ему точно подадут HeaderSimpleFormatted строку. 
@@ -211,21 +230,22 @@ namespace GirmeServer {
          * @param headerFormattedString строка в формате <code>$HeaderName: $Value</code>
          */
         static void doHeaderStringParse(__RequestParseStated& req, const std::string& headerFormattedString) {
-            typedef enum eHeaderParseState { nHeaderName, nSpace, nValue };
+            struct temp { enum eHeaderParseState { nHeaderName, nSpace, nValue }; };
+            using eHeaderParseState = temp::eHeaderParseState;
             static const unsigned int STANDART_HEADERNAME_LEN = 20;
             static const unsigned int STANDART_HEADERVALUE_LEN = 20;
             const size_t len = headerFormattedString.length();
             std::string HeaderName = ""; HeaderName.reserve(STANDART_HEADERNAME_LEN);
             std::string HeaderValue = ""; HeaderValue.reserve(STANDART_HEADERVALUE_LEN);
-            eHeaderParseState state = nHeaderName;
+            eHeaderParseState state = eHeaderParseState::nHeaderName;
 
             for(int cursor = 0; cursor < len; ++cursor) {
                 const char ch = headerFormattedString[cursor];
                 switch (state) {
-                case nHeaderName:
+                case eHeaderParseState::nHeaderName:
                     switch (ch) {
                         case ':': // if found ":" it's a sign of end of HeaderName
-                            state = nSpace;
+                            state = eHeaderParseState::nSpace;
                             break;
                         case ' ': //ignores spaces
                             break;
@@ -234,17 +254,17 @@ namespace GirmeServer {
                             break;
                     }
                     break;
-                case nSpace:
+                case eHeaderParseState::nSpace:
                     switch (ch) {
                         case ' ': //ignores spaces until we handle other char
                             break;
                         default: //we handle
                             HeaderValue += ch;
-                            state = nValue;
+                            state = eHeaderParseState::nValue;
                             break;
                     }
                     break;
-                case nValue:
+                case eHeaderParseState::nValue:
                     HeaderValue += ch;
                     break;
                 }
@@ -272,7 +292,7 @@ namespace GirmeServer {
                 } else
                     switch (state) {
                     case Method:
-                        if("Get" == ret) {
+                        if("GET" == ret) {
                             req.method = eHTTPMethod::GET;
                         } else {
                             req.method = eHTTPMethod::UNSUPPORTED;

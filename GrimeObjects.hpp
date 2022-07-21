@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
-#include "Teams.h"
+#include "Teams.hpp"
 #include <vector>
 
 namespace GrimeObjects{
@@ -12,12 +12,28 @@ namespace GrimeObjects{
             this->x = x;
             this->y = y;
         }
-        float x;
-        float y;
+        int x;
+        int y;
 
         void round(){
             x = roundf(x);
             y = roundf(y);
+        }
+
+        static Point upPoint(){
+            return Point(0, 1);
+        }
+
+        static Point downPoint(){
+            return Point(0, -1);
+        }
+
+        static Point rightPoint(){
+            return Point(1, 0);
+        }
+
+        static Point leftPoint(){
+            return Point(-1, 0);
         }
 
         Point& operator += (Point point2){
@@ -42,15 +58,15 @@ namespace GrimeObjects{
         }
     };
     // Тип игрового объекта
-    enum ObjectType{
+    enum eObjectType{
         cell, // игровая клетка
         chessman, //игровая фигура
     };
     // Простейший класс, описывающий базовый функционал любого игрового объекта
     class GrimeObject{
         public:
-            ObjectType objectType;
-            GrimeObject(Point position, ObjectType objectType) : m_position(position), objectType(objectType)
+            eObjectType objectType;
+            GrimeObject(Point position, eObjectType objectType) : m_position(position), objectType(objectType)
             {
             }
             Point getPosition(){
@@ -79,18 +95,45 @@ namespace GrimeObjects{
     // Общий примитивный класс карты. Может и (скорее всего) должен наследоваться более усложнёнными вариантами. 
     class PointMap{
         public:
-            std::vector<Point>* getMapPoints(){return &m_allCellsPositions;}
-            void generateMap(int xLength, int yLength){
+            const std::vector<Point>* getMapPoints(){return &m_allCellsPositions;}
+            Point getMapSize(){return m_mapSize;}
+            void generatePointMap(int xLength, int yLength){
                 for(int x = 0; x < xLength; x++){
                     for(int y = 0; y < yLength; y++){
-                        m_allCellsPositions.push_back(Point(x, y));
+                        m_allCellsPositions.emplace_back(Point(x, y));
                     }
                 }
+                m_mapSize.x = xLength;
+                m_mapSize.y = yLength;
+            }
+            PointMap(int xLength, int yLength){
+                generatePointMap(xLength, yLength);
             }
         private:
             std::vector<Point> m_allCellsPositions;
+            Point m_mapSize = Point(0,0);
     };
 
+    class Stuff{
+    public:
+    enum eDirection{
+        up,
+        down,
+        right,
+        left,
+
+        upRight,
+        upLeft,
+        downRight,
+        downLeft,
+
+        all,
+        allStraight,
+        allDiagonal,
+    };
+    };
+using eDirection = Stuff::eDirection;
+#pragma region PointOperators
     Point operator + (Point point1, Point point2){
         return Point(point1.x + point2.x, point1.y + point2.y);
     }
@@ -134,34 +177,37 @@ namespace GrimeObjects{
     std::ostream& operator << (std::ostream& oStream, Point point){
         return oStream << "x: "<< point.x<< "\ty: "<< point.y;
     }
-
+#pragma endregion
+   
     // Тип игровой фигуры
-    enum ChessmanType{
+    enum eChessmanType{
         //пешка
         pawn,
         queen,
         king,
     };
 
-    enum CellType{
-        black,
+    enum eCellType{
+        black = 1,
         white,
     };
+
+    class Cell;
 
     // Класс, обозначающий игровую шахматную фигуру
     class Chessman: public GrimeObject{
         public:
-            ChessmanType chessmanType;
+            eChessmanType chessmanType;
             bool isCanSwim;
             bool isCanFly;
             Team team;
-            virtual std::vector<Point> doOnSelect(PointMap* map){}; //здесь будем выводить доступные для ходьбы клетки
+            virtual std::vector<Cell*> doOnSelect(PointMap* map){}; //здесь будем выводить доступные для ходьбы клетки
             virtual void move(Point moveTo, Event* event){setPosition(moveTo);}
             virtual void attack(Point moveTo, Event* event){setPosition(moveTo); /*TODO:функция убийства*/} //атака нужна, когда, например, пешка ходит вперёд, но атакует по диагонали 
             virtual void die(Event* event){}
-            Chessman(Point position, ChessmanType chessmanType): GrimeObject(position, chessman), chessmanType(chessmanType)
+            Chessman(Point position, eChessmanType chessmanType): GrimeObject(position, chessman), chessmanType(chessmanType)
             {isCanFly = false; isCanSwim = false;}
-            Chessman(Point position, ChessmanType chessmanType, bool isCanSwim, bool isCanFly): GrimeObject(position, chessman), chessmanType(chessmanType), isCanSwim(isCanSwim), isCanFly(isCanFly)
+            Chessman(Point position, eChessmanType chessmanType, bool isCanSwim, bool isCanFly): GrimeObject(position, chessman), chessmanType(chessmanType), isCanSwim(isCanSwim), isCanFly(isCanFly)
             {}
         private:
     };
@@ -170,10 +216,12 @@ namespace GrimeObjects{
     class Cell: public GrimeObject{
         public:
             // TODO: спрайт тут должен быть или чёто такое хз
-            CellType cellType;
+            eCellType cellType;
             bool isPassable;
-            virtual void doOnEnter(Chessman* chessman, Event* event){}
-            Cell(Point position, CellType cellType, bool isPassable): GrimeObject(position, cell), cellType(cellType), isPassable(isPassable)
+            Chessman* chessmanOnCell = nullptr;
+            virtual void doOnEnter(Chessman* chessman, Event* event){chessmanOnCell = chessman;}
+            virtual void doOnExit(Chessman* chessman, Event* event){chessmanOnCell = nullptr;}
+            Cell(Point position, eCellType cellType, bool isPassable): GrimeObject(position, cell), cellType(cellType), isPassable(isPassable)
             {}
         private:
     };

@@ -1,7 +1,8 @@
 #pragma once
-#include "GrimeObjects.h"
+#include "GrimeObjects.hpp"
 
 namespace GrimeObjects{
+    const int cellsTypesCount = 2;
     class WhiteCell: public Cell{
         public:
             WhiteCell(Point position): Cell(position, white, true)

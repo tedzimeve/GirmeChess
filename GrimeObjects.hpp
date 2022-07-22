@@ -2,10 +2,12 @@
 #include <iostream>
 #include <string>
 #include <math.h>
-#include "Teams.hpp"
 #include <vector>
+#include "Teams.hpp"
+#include "GrimeMap.hpp"
 
 namespace GrimeObjects{
+    #pragma region CoreTypes
     // Структура, обозначающая точку нахождения объекта в пространстве
     struct Point{
         Point(float x, float y){
@@ -92,28 +94,6 @@ namespace GrimeObjects{
         private:
     };
 
-    // Общий примитивный класс карты. Может и (скорее всего) должен наследоваться более усложнёнными вариантами. 
-    class PointMap{
-        public:
-            const std::vector<Point>* getMapPoints(){return &m_allCellsPositions;}
-            Point getMapSize(){return m_mapSize;}
-            void generatePointMap(int xLength, int yLength){
-                for(int x = 0; x < xLength; x++){
-                    for(int y = 0; y < yLength; y++){
-                        m_allCellsPositions.emplace_back(Point(x, y));
-                    }
-                }
-                m_mapSize.x = xLength;
-                m_mapSize.y = yLength;
-            }
-            PointMap(int xLength, int yLength){
-                generatePointMap(xLength, yLength);
-            }
-        private:
-            std::vector<Point> m_allCellsPositions;
-            Point m_mapSize = Point(0,0);
-    };
-
     class Stuff{
     public:
     enum eDirection{
@@ -132,8 +112,9 @@ namespace GrimeObjects{
         allDiagonal,
     };
     };
-using eDirection = Stuff::eDirection;
-#pragma region PointOperators
+    using eDirection = Stuff::eDirection;
+    
+    #pragma region PointOperators
     Point operator + (Point point1, Point point2){
         return Point(point1.x + point2.x, point1.y + point2.y);
     }
@@ -177,19 +158,16 @@ using eDirection = Stuff::eDirection;
     std::ostream& operator << (std::ostream& oStream, Point point){
         return oStream << "x: "<< point.x<< "\ty: "<< point.y;
     }
-#pragma endregion
-   
+    #pragma endregion
+    #pragma endregion
+
+    #pragma region Chessman
     // Тип игровой фигуры
     enum eChessmanType{
         //пешка
         pawn,
         queen,
         king,
-    };
-
-    enum eCellType{
-        black = 1,
-        white,
     };
 
     class Cell;
@@ -201,17 +179,40 @@ using eDirection = Stuff::eDirection;
             bool isCanSwim;
             bool isCanFly;
             Team team;
-            virtual std::vector<Cell*> doOnSelect(PointMap* map){}; //здесь будем выводить доступные для ходьбы клетки
+            virtual std::vector<Cell*> doOnSelect(Map* map){}; //здесь будем выводить доступные для ходьбы клетки
             virtual void move(Point moveTo, Event* event){setPosition(moveTo);}
-            virtual void attack(Point moveTo, Event* event){setPosition(moveTo); /*TODO:функция убийства*/} //атака нужна, когда, например, пешка ходит вперёд, но атакует по диагонали 
             virtual void die(Event* event){}
+            virtual void attack(Point moveTo, std::vector<Chessman*> attackedChessmans ,Event* event){//атака нужна, когда, например, пешка ходит вперёд, но атакует по диагонали 
+                setPosition(moveTo);
+                for(Chessman* chessman: attackedChessmans){
+                    chessman->die(nullptr);
+                }
+            } 
             Chessman(Point position, eChessmanType chessmanType): GrimeObject(position, chessman), chessmanType(chessmanType)
             {isCanFly = false; isCanSwim = false;}
             Chessman(Point position, eChessmanType chessmanType, bool isCanSwim, bool isCanFly): GrimeObject(position, chessman), chessmanType(chessmanType), isCanSwim(isCanSwim), isCanFly(isCanFly)
             {}
         private:
     };
+    #pragma endregion
 
+    #pragma region Cell
+    enum eCellType{
+        black = 1,
+        white,
+    };
+    /**
+     * @brief 
+     * Структура, отражающая рельеф клетки
+     * @param isPassable абсолютная проходимость. Если true, то клетку нельзя никак преодолеть
+     * @param isHightPlace клетку с таким рельефом могут преодолевать летающие существа. Может быть использовано, например, для гор
+     * @param isLiquidPlace клетку с таким рельефом могут преодолевать плавающие существа. Может быть использовано, например, для воды
+     */
+    struct CellRelief{
+        bool isPassable = true;
+        bool isHightPlace = false;
+        bool isLiquidPlace = false;
+    };
     // Класс, обозначающий игровую клетку
     class Cell: public GrimeObject{
         public:
@@ -225,4 +226,5 @@ using eDirection = Stuff::eDirection;
             {}
         private:
     };
+    #pragma endregion
 }

@@ -19,5 +19,5 @@ class Team{
         }
         Team(){}
     private:
-        int m_teamIndex;
+        unsigned int m_teamIndex;
 };

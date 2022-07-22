@@ -1,5 +1,6 @@
 #pragma once
-#include "GrimeMap.hpp"
+#include "GrimeObjects.hpp"
+#include "GrimeMap.cpp"
 
 namespace GrimeObjects{
 
@@ -25,13 +26,7 @@ namespace GrimeObjects{
             iteratorPosition += moveStep;
         } while (iteratorPosition <= endPosition);
     }
-/*
- void foo(params int[] array){}
 
- void bar(){
-    foo(0, 1, 2, 5);
- }
-*/
     std::vector<Cell*> getCellsCanMoveTo(Map* map, Point chessmanPosition, Point movePoints, eDirection moveDirection){
         std::vector<Cell*> cellsOnPath;
         switch (moveDirection)
@@ -49,9 +44,8 @@ namespace GrimeObjects{
         public:
             Pawn(Point position): Chessman(position, pawn)
             {}
-            std::vector<Cell*> doOnSelect(PointMap* pointMap) override{
-                Map* map = static_cast<Map*>(pointMap);
-                
+            std::vector<Cell*> doOnSelect(Map* map) override{
+                int i = 1;
             }
         private:
     };
